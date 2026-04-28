@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --color-app: hsl(40, 20%, 97%);
+  --color-card: hsl(0, 0%, 100%);
+  --color-primary: hsl(220, 20%, 15%);
+  --color-muted: hsl(220, 15%, 45%);
+  --color-action: hsl(14, 90%, 55%);
+  --color-border: hsl(220, 10%, 90%);
+  
+  --font-display: 'Playfair Display', serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+/* Base resets mapping to our tokens */
+:root {
+  --bg-app: var(--color-app);
+  --surface-card: var(--color-card);
+  --text-primary: var(--color-primary);
+  --text-muted: var(--color-muted);
+  --ui-interactive: var(--color-action);
+  --ui-border: var(--color-border);
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-app);
+  color: var(--color-primary);
+}

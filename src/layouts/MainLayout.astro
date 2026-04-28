@@ -1,0 +1,78 @@
+---
+import '../styles/global.css';
+
+interface Props {
+	title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title} | London Curated</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+</head>
+<body class="antialiased">
+
+    <!-- Navigation Bar -->
+    <nav class="sticky top-0 z-50 bg-app/90 backdrop-blur border-b border-border">
+        <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+            <a href="/" class="group flex items-center gap-2 text-sm font-sans font-medium text-muted hover:text-primary transition-colors">
+                <svg class="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Back to Directory
+            </a>
+            <div class="font-display font-bold text-lg tracking-tight">Curated London</div>
+        </div>
+    </nav>
+
+    <!-- Main Profile Content -->
+    <slot />
+
+    <!-- Custom Toast Notification Container -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-primary text-white px-6 py-4 rounded-xl shadow-2xl transform translate-y-24 opacity-0 transition-all duration-300 z-50 flex items-center gap-3 border border-gray-700 pointer-events-none">
+        <svg class="w-6 h-6 text-action" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <div class="flex flex-col">
+            <span id="toast-title" class="font-sans font-semibold text-sm">Action</span>
+            <span id="toast-message" class="font-sans text-xs text-gray-300">Message goes here</span>
+        </div>
+    </div>
+
+    <!-- JavaScript for Interactions -->
+    <script is:inline>
+        // Action Button Logic (Booking/Menu)
+        function triggerAction(event, actionTitle, message) {
+            event.preventDefault(); // Prevent default anchor jumps
+            event.stopPropagation();
+            displayToast(actionTitle, message);
+        }
+
+        // Toast Notification Logic
+        let toastTimeout;
+        function displayToast(title, message) {
+            const toast = document.getElementById('toast');
+            if(!toast) return;
+            document.getElementById('toast-title').innerText = title;
+            document.getElementById('toast-message').innerText = message;
+            
+            // Slide in
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            // Auto hide after 3 seconds
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

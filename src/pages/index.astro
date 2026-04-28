@@ -1,0 +1,96 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import directory from '../data/directory.json';
+
+// Extract unique cuisines for the filter bar
+const cuisines = [...new Set(directory.map((r: any) => r.cuisine))];
+---
+
+<MainLayout title="Home">
+    <!-- Asymmetric split-screen layout for desktop >= 1024px -->
+    <div class="lg:grid lg:grid-cols-2 lg:h-screen lg:overflow-hidden">
+        
+        <!-- Left Column (List) -->
+        <div class="p-6 md:p-8 lg:p-12 lg:overflow-y-auto lg:h-screen">
+            <h1 class="font-display text-4xl md:text-5xl text-primary mb-6">Explore London</h1>
+            
+            <!-- Filter Bar -->
+            <div class="flex flex-row gap-2 overflow-x-auto pb-4 mb-8 snap-x no-scrollbar">
+                <button class="snap-start whitespace-nowrap px-4 py-1.5 border border-border rounded-full font-sans text-sm font-medium bg-action text-card transition-colors shrink-0">
+                    All
+                </button>
+                {cuisines.map((cuisine) => (
+                    <button class="snap-start whitespace-nowrap px-4 py-1.5 border border-border rounded-full font-sans text-sm font-medium text-primary hover:border-action transition-colors shrink-0 bg-card">
+                        {cuisine}
+                    </button>
+                ))}
+            </div>
+
+            <!-- List Items -->
+            <div class="space-y-6">
+                {directory.map((restaurant) => (
+                    <a href={`/restaurant/${restaurant.slug}`} class="group block border-b border-border pb-6 mb-6 last:border-0 last:pb-0 last:mb-0 transition-opacity hover:opacity-90">
+                        <div class="flex gap-4">
+                            <!-- Thumbnail -->
+                            <div class="w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden shrink-0 bg-gray-200">
+                                <img src={restaurant.images[0] || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80'} alt={restaurant.name} class="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                            </div>
+                            
+                            <!-- Data Block -->
+                            <div class="flex flex-col justify-center flex-1">
+                                <h2 class="font-sans font-semibold text-xl text-primary mb-1 group-hover:text-action transition-colors">{restaurant.name}</h2>
+                                
+                                <div class="flex items-center gap-2 font-sans text-sm text-muted mb-3 flex-wrap">
+                                    <span class="flex items-center text-action">
+                                        <svg class="w-4 h-4 fill-current mr-1" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                                        {restaurant.rating > 0 ? restaurant.rating : "New"}
+                                    </span>
+                                    <span>•</span>
+                                    <span>{restaurant.price_range}</span>
+                                    <span>•</span>
+                                    <span>{restaurant.cuisine}</span>
+                                </div>
+                                
+                                <p class="font-sans text-sm text-muted line-clamp-2 md:line-clamp-3">
+                                    {restaurant.list_view_snippet}
+                                </p>
+                            </div>
+                        </div>
+                    </a>
+                ))}
+            </div>
+        </div>
+
+        <!-- Right Column (Map) -->
+        <div class="hidden lg:block lg:h-screen lg:sticky lg:top-0 bg-[#e5e3df] relative border-l border-border">
+            <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(var(--color-muted) 1px, transparent 1px); background-size: 20px 20px;"></div>
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="bg-card/90 backdrop-blur px-6 py-4 rounded-xl border border-border shadow-lg font-sans text-primary font-medium">
+                    Map View (Interactive mode requires Google Maps JS API)
+                </div>
+            </div>
+            
+            <!-- Map Pins (Mock) -->
+            {directory.map((restaurant, index) => {
+                // Generate pseudo-random coordinates for mock pins
+                const top = 10 + (index * 13 % 80);
+                const left = 10 + (index * 27 % 80);
+                return (
+                    <div class="absolute w-4 h-4 bg-primary rounded-full border-2 border-white shadow-md transition-all duration-300 transform hover:scale-150 hover:bg-action hover:z-10 cursor-pointer" style={`top: ${top}%; left: ${left}%;`} title={restaurant.name}></div>
+                )
+            })}
+        </div>
+
+    </div>
+    
+    <style>
+        /* Hide scrollbar for filter bar */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</MainLayout>

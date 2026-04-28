@@ -1,6 +1,7 @@
 ---
 import MainLayout from '../../layouts/MainLayout.astro';
 import directory from '../../data/directory.json';
+import ProfileMap from '../../components/ProfileMap';
     
 export async function getStaticPaths() {
     return directory.map((restaurant) => ({
@@ -140,11 +141,9 @@ if (apiKey) {
                         <p class="font-sans text-sm text-muted mb-4 leading-relaxed">
                             {restaurant.city}, {restaurant.country}
                         </p>
-                        <!-- Faux Map Box -->
-                        <div class="w-full h-32 bg-[#e5e3df] rounded-lg border border-border relative overflow-hidden flex items-center justify-center cursor-pointer group" onclick="triggerAction(event, 'Map Opened', 'Launching Google Maps')">
-                            <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(var(--color-muted) 1px, transparent 1px); background-size: 10px 10px;"></div>
-                            <div class="w-4 h-4 bg-action rounded-full border-2 border-white shadow-md z-10 group-hover:scale-125 transition-transform"></div>
-                            <span class="absolute bottom-2 right-2 font-sans text-[10px] bg-card px-2 py-1 rounded text-primary">View Map</span>
+                        <!-- Real Map Component -->
+                        <div onclick="triggerAction(event, 'Map Opened', 'Launching Google Maps')" class="cursor-pointer">
+                            <ProfileMap client:load lat={restaurant.lat} lng={restaurant.lng} name={restaurant.name} />
                         </div>
                     </div>
 

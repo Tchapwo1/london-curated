@@ -143,7 +143,7 @@ if (apiKey) {
                         </p>
                         <!-- Real Map Component -->
                         <div onclick="triggerAction(event, 'Map Opened', 'Launching Google Maps')" class="cursor-pointer">
-                            <ProfileMap client:load lat={restaurant.lat} lng={restaurant.lng} name={restaurant.name} />
+                            <ProfileMap client:load lat={lat} lng={lng} name={restaurant.name} />
                         </div>
                     </div>
 

@@ -92,86 +92,72 @@ const directoryWithImages = await Promise.all(directory.map(async (restaurant: a
         <!-- Right Column (Map) -->
         <div class="hidden lg:block lg:h-screen lg:sticky lg:top-0 bg-[#e5e3df] relative border-l border-border">
             <div id="map-container" class="absolute inset-0 z-0"></div>
-            <!-- Google Maps will be injected here -->
+            <!-- MapLibre will be injected here -->
             <div class="absolute inset-0 opacity-20 pointer-events-none z-10" style="background-image: radial-gradient(var(--color-muted) 1px, transparent 1px); background-size: 20px 20px;"></div>
-            {!import.meta.env.PUBLIC_GOOGLE_PLACES_API_KEY && (
-                <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                    <div class="bg-card/90 backdrop-blur px-6 py-4 rounded-xl border border-border shadow-lg font-sans text-primary font-medium">
-                        Map View (Requires Google Maps JS API Key)
-                    </div>
-                </div>
-            )}
         </div>
 
     </div>
 
-    <!-- Map Script Injection -->
-    <script is:inline define:vars={{ apiKey: import.meta.env.PUBLIC_GOOGLE_PLACES_API_KEY, mapData: directoryWithImages.map((r: any) => ({ id: r.slug, name: r.name, lat: r.lat, lng: r.lng, url: `/restaurant/${r.slug}` })) }}>
-        if (apiKey) {
+    <!-- OpenFreeMap (MapLibre) Script Injection -->
+    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js" is:inline></script>
+    <script is:inline define:vars={{ mapData: directoryWithImages.map((r: any) => ({ id: r.slug, name: r.name, lat: r.lat, lng: r.lng, url: `/restaurant/${r.slug}` })) }}>
+        window.addEventListener('DOMContentLoaded', () => {
             window.mapData = mapData;
             
-            window.initMap = function() {
-                const mapOptions = {
-                    center: { lat: 51.5033, lng: -0.0794 }, // Center roughly on Bermondsey/London Bridge
-                    zoom: 14,
-                    mapId: 'DEMO_MAP_ID', // Required for AdvancedMarkerElement
-                    disableDefaultUI: true,
-                    zoomControl: true,
-                };
+            const map = new maplibregl.Map({
+                container: 'map-container',
+                style: 'https://tiles.openfreemap.org/styles/positron', // Light bone-colored map
+                center: [-0.0794, 51.5033], // MapLibre uses [lng, lat]
+                zoom: 13,
+                attributionControl: false
+            });
+
+            // Add navigation control (zoom buttons)
+            map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+
+            const markers = {};
+
+            window.mapData.forEach((restaurant) => {
+                const pinElement = document.createElement("div");
+                pinElement.className = "w-4 h-4 bg-primary rounded-full border-2 border-white shadow-md transition-all duration-300 transform hover:scale-150 hover:bg-action cursor-pointer relative z-10";
+                pinElement.title = restaurant.name;
                 
-                const map = new google.maps.Map(document.getElementById("map-container"), mapOptions);
-                const markers = {};
+                const marker = new maplibregl.Marker({
+                    element: pinElement
+                })
+                .setLngLat([restaurant.lng, restaurant.lat])
+                .addTo(map);
 
-                window.mapData.forEach((restaurant) => {
-                    const pinElement = document.createElement("div");
-                    pinElement.className = "w-4 h-4 bg-primary rounded-full border-2 border-white shadow-md transition-all duration-300 transform hover:scale-150 hover:bg-action cursor-pointer relative z-10";
-                    pinElement.title = restaurant.name;
-                    
-                    const marker = new google.maps.marker.AdvancedMarkerElement({
-                        map: map,
-                        position: { lat: restaurant.lat, lng: restaurant.lng },
-                        title: restaurant.name,
-                        content: pinElement
-                    });
-
-                    marker.addListener('click', () => {
-                        window.location.href = restaurant.url;
-                    });
-
-                    markers[restaurant.id] = pinElement;
+                pinElement.addEventListener('click', () => {
+                    window.location.href = restaurant.url;
                 });
 
-                // Attach interaction bridge to list items
-                const listItems = document.querySelectorAll('.restaurant-list-item');
-                listItems.forEach(item => {
-                    item.addEventListener('mouseenter', () => {
-                        const id = item.getAttribute('data-id');
-                        if(markers[id]) {
-                            markers[id].classList.add('scale-150', 'bg-action');
-                            markers[id].classList.remove('bg-primary');
-                            markers[id].style.zIndex = '1000';
-                        }
-                    });
-                    item.addEventListener('mouseleave', () => {
-                        const id = item.getAttribute('data-id');
-                        if(markers[id]) {
-                            markers[id].classList.remove('scale-150', 'bg-action');
-                            markers[id].classList.add('bg-primary');
-                            markers[id].style.zIndex = '10';
-                        }
-                    });
+                markers[restaurant.id] = pinElement;
+            });
+
+            // Attach interaction bridge to list items
+            const listItems = document.querySelectorAll('.restaurant-list-item');
+            listItems.forEach(item => {
+                item.addEventListener('mouseenter', () => {
+                    const id = item.getAttribute('data-id');
+                    if(markers[id]) {
+                        markers[id].classList.add('scale-150', 'bg-action');
+                        markers[id].classList.remove('bg-primary');
+                        markers[id].style.zIndex = '1000';
+                    }
                 });
-            }
-            
-            // Dynamically load Google Maps script
-            const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap&libraries=marker&v=weekly`;
-            script.async = true;
-            script.defer = true;
-            document.head.appendChild(script);
-        }
+                item.addEventListener('mouseleave', () => {
+                    const id = item.getAttribute('data-id');
+                    if(markers[id]) {
+                        markers[id].classList.remove('scale-150', 'bg-action');
+                        markers[id].classList.add('bg-primary');
+                        markers[id].style.zIndex = '10';
+                    }
+                });
+            });
+        });
     </script>
-    
     <style>
         /* Hide scrollbar for filter bar */
         .no-scrollbar::-webkit-scrollbar {

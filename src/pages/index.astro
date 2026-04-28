@@ -90,11 +90,12 @@ const directoryWithImages = await Promise.all(directory.map(async (restaurant: a
         </div>
 
         <!-- Right Column (Map) -->
-        <div class="hidden lg:block lg:h-screen lg:sticky lg:top-0 bg-[#e5e3df] relative border-l border-border" id="map-container">
+        <div class="hidden lg:block lg:h-screen lg:sticky lg:top-0 bg-[#e5e3df] relative border-l border-border">
+            <div id="map-container" class="absolute inset-0 z-0"></div>
             <!-- Google Maps will be injected here -->
-            <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(var(--color-muted) 1px, transparent 1px); background-size: 20px 20px;"></div>
+            <div class="absolute inset-0 opacity-20 pointer-events-none z-10" style="background-image: radial-gradient(var(--color-muted) 1px, transparent 1px); background-size: 20px 20px;"></div>
             {!import.meta.env.PUBLIC_GOOGLE_PLACES_API_KEY && (
-                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
                     <div class="bg-card/90 backdrop-blur px-6 py-4 rounded-xl border border-border shadow-lg font-sans text-primary font-medium">
                         Map View (Requires Google Maps JS API Key)
                     </div>
@@ -109,7 +110,7 @@ const directoryWithImages = await Promise.all(directory.map(async (restaurant: a
         if (apiKey) {
             window.mapData = mapData;
             
-            function initMap() {
+            window.initMap = function() {
                 const mapOptions = {
                     center: { lat: 51.5033, lng: -0.0794 }, // Center roughly on Bermondsey/London Bridge
                     zoom: 14,

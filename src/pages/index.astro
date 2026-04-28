@@ -9,20 +9,28 @@ const cuisines = [...new Set(directory.map((r: any) => r.cuisine))];
 const apiKey = import.meta.env.PUBLIC_GOOGLE_PLACES_API_KEY;
 const directoryWithImages = await Promise.all(directory.map(async (restaurant: any) => {
     let imageUrl = restaurant.images && restaurant.images.length > 0 ? restaurant.images[0] : 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=400&q=80';
+    let lat = 51.5000 + (Math.random() * 0.05 - 0.025); // Default with jitter
+    let lng = -0.1000 + (Math.random() * 0.05 - 0.025);
     if (apiKey) {
         try {
             const query = encodeURIComponent(`${restaurant.name} London`);
-            const searchUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${query}&inputtype=textquery&fields=photos&key=${apiKey}`;
+            const searchUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${query}&inputtype=textquery&fields=photos,geometry&key=${apiKey}`;
             const response = await fetch(searchUrl);
             const data = await response.json();
-            if (data.candidates && data.candidates.length > 0 && data.candidates[0].photos && data.candidates[0].photos.length > 0) {
-                imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${data.candidates[0].photos[0].photo_reference}&key=${apiKey}`;
+            if (data.candidates && data.candidates.length > 0) {
+                if (data.candidates[0].photos && data.candidates[0].photos.length > 0) {
+                    imageUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${data.candidates[0].photos[0].photo_reference}&key=${apiKey}`;
+                }
+                if (data.candidates[0].geometry && data.candidates[0].geometry.location) {
+                    lat = data.candidates[0].geometry.location.lat;
+                    lng = data.candidates[0].geometry.location.lng;
+                }
             }
         } catch (e) {
             console.error("Error fetching image for", restaurant.name);
         }
     }
-    return { ...restaurant, primaryImage: imageUrl };
+    return { ...restaurant, primaryImage: imageUrl, lat, lng };
 }));
 ---
 
@@ -49,7 +57,7 @@ const directoryWithImages = await Promise.all(directory.map(async (restaurant: a
             <!-- List Items -->
             <div class="space-y-6">
                 {directoryWithImages.map((restaurant) => (
-                    <a href={`/restaurant/${restaurant.slug}`} class="group block border-b border-border pb-6 mb-6 last:border-0 last:pb-0 last:mb-0 transition-opacity hover:opacity-90">
+                    <a href={`/restaurant/${restaurant.slug}`} class="restaurant-list-item group block border-b border-border pb-6 mb-6 last:border-0 last:pb-0 last:mb-0 transition-opacity hover:opacity-90" data-id={restaurant.slug}>
                         <div class="flex gap-4">
                             <!-- Thumbnail -->
                             <div class="w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden shrink-0 bg-gray-200">
@@ -82,26 +90,86 @@ const directoryWithImages = await Promise.all(directory.map(async (restaurant: a
         </div>
 
         <!-- Right Column (Map) -->
-        <div class="hidden lg:block lg:h-screen lg:sticky lg:top-0 bg-[#e5e3df] relative border-l border-border">
+        <div class="hidden lg:block lg:h-screen lg:sticky lg:top-0 bg-[#e5e3df] relative border-l border-border" id="map-container">
+            <!-- Google Maps will be injected here -->
             <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(var(--color-muted) 1px, transparent 1px); background-size: 20px 20px;"></div>
-            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div class="bg-card/90 backdrop-blur px-6 py-4 rounded-xl border border-border shadow-lg font-sans text-primary font-medium">
-                    Map View (Interactive mode requires Google Maps JS API)
+            {!import.meta.env.PUBLIC_GOOGLE_PLACES_API_KEY && (
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div class="bg-card/90 backdrop-blur px-6 py-4 rounded-xl border border-border shadow-lg font-sans text-primary font-medium">
+                        Map View (Requires Google Maps JS API Key)
+                    </div>
                 </div>
-            </div>
-            
-            <!-- Map Pins (Mock) -->
-            {directory.map((restaurant, index) => {
-                // Generate pseudo-random coordinates for mock pins
-                const top = 10 + (index * 13 % 80);
-                const left = 10 + (index * 27 % 80);
-                return (
-                    <div class="absolute w-4 h-4 bg-primary rounded-full border-2 border-white shadow-md transition-all duration-300 transform hover:scale-150 hover:bg-action hover:z-10 cursor-pointer" style={`top: ${top}%; left: ${left}%;`} title={restaurant.name}></div>
-                )
-            })}
+            )}
         </div>
 
     </div>
+
+    <!-- Map Script Injection -->
+    <script is:inline define:vars={{ apiKey: import.meta.env.PUBLIC_GOOGLE_PLACES_API_KEY, mapData: directoryWithImages.map((r: any) => ({ id: r.slug, name: r.name, lat: r.lat, lng: r.lng, url: `/restaurant/${r.slug}` })) }}>
+        if (apiKey) {
+            window.mapData = mapData;
+            
+            function initMap() {
+                const mapOptions = {
+                    center: { lat: 51.5033, lng: -0.0794 }, // Center roughly on Bermondsey/London Bridge
+                    zoom: 14,
+                    mapId: 'DEMO_MAP_ID', // Required for AdvancedMarkerElement
+                    disableDefaultUI: true,
+                    zoomControl: true,
+                };
+                
+                const map = new google.maps.Map(document.getElementById("map-container"), mapOptions);
+                const markers = {};
+
+                window.mapData.forEach((restaurant) => {
+                    const pinElement = document.createElement("div");
+                    pinElement.className = "w-4 h-4 bg-primary rounded-full border-2 border-white shadow-md transition-all duration-300 transform hover:scale-150 hover:bg-action cursor-pointer relative z-10";
+                    pinElement.title = restaurant.name;
+                    
+                    const marker = new google.maps.marker.AdvancedMarkerElement({
+                        map: map,
+                        position: { lat: restaurant.lat, lng: restaurant.lng },
+                        title: restaurant.name,
+                        content: pinElement
+                    });
+
+                    marker.addListener('click', () => {
+                        window.location.href = restaurant.url;
+                    });
+
+                    markers[restaurant.id] = pinElement;
+                });
+
+                // Attach interaction bridge to list items
+                const listItems = document.querySelectorAll('.restaurant-list-item');
+                listItems.forEach(item => {
+                    item.addEventListener('mouseenter', () => {
+                        const id = item.getAttribute('data-id');
+                        if(markers[id]) {
+                            markers[id].classList.add('scale-150', 'bg-action');
+                            markers[id].classList.remove('bg-primary');
+                            markers[id].style.zIndex = '1000';
+                        }
+                    });
+                    item.addEventListener('mouseleave', () => {
+                        const id = item.getAttribute('data-id');
+                        if(markers[id]) {
+                            markers[id].classList.remove('scale-150', 'bg-action');
+                            markers[id].classList.add('bg-primary');
+                            markers[id].style.zIndex = '10';
+                        }
+                    });
+                });
+            }
+            
+            // Dynamically load Google Maps script
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap&libraries=marker&v=weekly`;
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        }
+    </script>
     
     <style>
         /* Hide scrollbar for filter bar */
